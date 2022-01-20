@@ -33,5 +33,5 @@ func (server *Server) Run(address string) {
 func Run() {
 	server.InitializeDB()
 	server.InitializeRouters()
-	server.Run(":8000")
+	server.Run("localhost:8000")
 }

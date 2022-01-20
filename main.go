@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/MasoudHeydari/golang-keep-note/controller"
+	server "github.com/MasoudHeydari/golang-keep-note/controller"
 )
 
 func main() {
-	controller.Run()
+	server.Run()
 }
