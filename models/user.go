@@ -8,13 +8,20 @@ import (
 )
 
 type User struct {
-	ID        uint64    `gorm:"primary_key; auto_increment; not null" json:"user_id"`
+	ID        uint      `gorm:"primary_key" json:"user_id"`
 	FirstName string    `gorm:"size:255; not null" json:"first_name"`
 	LastName  string    `gorm:"size:255; not null" json:"last_name"`
 	Email     string    `gorm:"size:255; not null; unique" json:"email"`
 	Password  string    `gorm:"size:255; not null" json:"password"`
 	CreatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"`
 	UpdatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at"`
+}
+
+func (usr *User) Prepare() {
+	usr.ID = 0
+	usr.FirstName = strings.TrimSpace(usr.FirstName)
+	usr.LastName = strings.TrimSpace(usr.LastName)
+	usr.Email = strings.TrimSpace(usr.Email)
 }
 
 func (usr *User) Validate(action string) error {

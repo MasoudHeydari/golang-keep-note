@@ -5,13 +5,11 @@ import (
 	"github.com/MasoudHeydari/golang-keep-note/database"
 	"github.com/MasoudHeydari/golang-keep-note/models"
 	"github.com/gorilla/mux"
-	"github.com/jinzhu/gorm"
 	"log"
 	"net/http"
 )
 
 type Server struct {
-	DB       *gorm.DB
 	sqlStore models.SqlQuerier
 	Router   *mux.Router
 }
@@ -24,7 +22,6 @@ func (server *Server) InitializeDB() {
 		log.Fatal("failed to connect to database, error: ", err)
 	}
 	server.sqlStore = models.NewSqlStore(dbConnection)
-	server.DB = dbConnection
 }
 
 func (server *Server) Run(address string) {
