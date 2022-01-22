@@ -3,6 +3,7 @@ package models
 import (
 	"errors"
 	"fmt"
+	"github.com/jinzhu/gorm"
 	"log"
 )
 
@@ -54,3 +55,34 @@ func (store *SqlStore) GetAllUsers() (*[]User, error) {
 
 	return &users, nil
 }
+
+func (store *SqlStore) GetUserById(userId uint32) (*User, error) {
+	user := User{}
+	err := store.db.Model(&User{}).Where("id = ?", userId).Take(&user).Error
+	if err != nil {
+		return &User{}, err
+	}
+
+	if gorm.IsRecordNotFoundError(err) {
+		return &User{}, errors.New("user not found")
+	}
+
+	return &user, nil
+
+}
+
+/*
+
+func (u *User) FindUserByID(db *gorm.DB, uid uint32) (*User, error) {
+	var err error
+	err = db.Debug().Model(User{}).Where("id = ?", uid).Take(&u).Error
+	if err != nil {
+		return &User{}, err
+	}
+	if gorm.IsRecordNotFoundError(err) {
+		return &User{}, errors.New("User Not Found")
+	}
+	return u, err
+}
+
+*/

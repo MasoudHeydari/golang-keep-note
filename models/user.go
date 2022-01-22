@@ -48,5 +48,4 @@ func (usr *User) Validate(action string) error {
 		}
 		return nil
 	}
-
 }
