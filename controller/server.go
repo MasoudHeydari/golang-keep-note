@@ -3,6 +3,7 @@ package controller
 import (
 	"fmt"
 	"github.com/MasoudHeydari/golang-keep-note/database"
+	"github.com/MasoudHeydari/golang-keep-note/models"
 	"github.com/gorilla/mux"
 	"github.com/jinzhu/gorm"
 	"log"
@@ -10,8 +11,9 @@ import (
 )
 
 type Server struct {
-	DB     *gorm.DB
-	Router *mux.Router
+	DB       *gorm.DB
+	sqlStore models.SqlQuerier
+	Router   *mux.Router
 }
 
 var server = Server{}
@@ -21,7 +23,7 @@ func (server *Server) InitializeDB() {
 	if err != nil {
 		log.Fatal("failed to connect to database, error: ", err)
 	}
-
+	server.sqlStore = models.NewSqlStore(dbConnection)
 	server.DB = dbConnection
 }
 

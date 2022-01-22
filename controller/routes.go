@@ -17,6 +17,7 @@ func initializeHomeRouter(server *Server) {
 }
 
 func initializeUserRouter(server *Server) {
+	server.Router.HandleFunc("/users", server.CreateNewUser).Methods("POST")
 
 }
 
