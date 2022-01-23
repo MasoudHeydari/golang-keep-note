@@ -4,7 +4,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func (server *Server) InitializeRouters() {
+func (server *Server) initializeRouters() {
 	server.Router = mux.NewRouter()
 	initializeHomeRouter(server)
 	initializeUserRouter(server)

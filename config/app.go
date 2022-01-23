@@ -15,3 +15,11 @@ func GetAppConfig() (appConfig map[string]string, err error) {
 
 	return
 }
+
+func GetTokenSecretKey() string {
+	// TODO cannot read values from .env file
+	//s := os.Getenv("MYSQL_PORT")
+	//fmt.Println("secret key: ", s)
+	appConfig, _ := godotenv.Read()
+	return appConfig["API_SECRET"]
+}
