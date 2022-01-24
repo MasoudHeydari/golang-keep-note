@@ -3,24 +3,31 @@ package models
 import (
 	"errors"
 	"fmt"
+	"github.com/MasoudHeydari/golang-keep-note/utils"
 	"github.com/jinzhu/gorm"
 	"log"
+	"time"
 )
 
 func (store *SqlStore) CreateNewUser(newUser *User) (*User, error) {
 	isEmailExist, err := store.IsEmailAlreadyExist(newUser)
 	fmt.Println("is email already exist: ", isEmailExist)
-	if isEmailExist && err != nil {
-		log.Println("user already exist, try another email")
-		errMsg := err.Error() + " | user already exist, try another email"
-		return &User{}, errors.New(errMsg)
+	if err != nil {
+		return &User{}, err
 	}
-	fmt.Println("before valid: ", newUser.ID)
+
+	if isEmailExist {
+		log.Println("user already exist, try another email")
+		return &User{}, errors.New("this email already registered, try another one")
+	}
 	err = newUser.Validate("")
 	if err != nil {
 		return &User{}, err
 	}
-	fmt.Println("after valid: ", newUser.ID)
+	err = newUser.HashPassword()
+	if err != nil {
+		return &User{}, err
+	}
 
 	err = store.db.Create(newUser).Error
 	if err != nil {
@@ -31,19 +38,14 @@ func (store *SqlStore) CreateNewUser(newUser *User) (*User, error) {
 }
 
 func (store *SqlStore) IsEmailAlreadyExist(user *User) (bool, error) {
-	// TODO this function has bug, fix it... MasoudHeydari: 2022 jan 22 - 22:31
-	var isEmailExist bool
-	fmt.Println("email: ", user.Email)
-	r := store.db.Model(&User{}).
-		Select("COUNT(*) > 0").
-		Where("email = ?", user.Email).
-		Scan(&isEmailExist)
+	isEmailExist := false
+	r := store.db.Model(User{}).Where("email = ?", user.Email).Take(&User{})
+	if r.Error != nil {
+		return isEmailExist, r.Error
+	}
 
-	r = store.db.Raw("select email from users where email = ?", user.Email).Scan(&isEmailExist)
-	fmt.Println("rows affected: ", r.RowsAffected)
-
-	fmt.Println("isEmailExist: ", isEmailExist)
-	return isEmailExist, r.Error
+	isEmailExist = r.RowsAffected > 0
+	return isEmailExist, nil
 }
 
 func (store *SqlStore) GetAllUsers() (*[]User, error) {
@@ -71,18 +73,65 @@ func (store *SqlStore) GetUserById(userId uint32) (*User, error) {
 
 }
 
-/*
-
-func (u *User) FindUserByID(db *gorm.DB, uid uint32) (*User, error) {
-	var err error
-	err = db.Debug().Model(User{}).Where("id = ?", uid).Take(&u).Error
-	if err != nil {
-		return &User{}, err
+func (store *SqlStore) GetUserByEmail(email string) (*User, error) {
+	fetchedUser := User{}
+	r := store.db.Model(User{}).Where("email = ?", email).Take(&fetchedUser)
+	fmt.Println("row affected: ", r.RowsAffected)
+	if r.Error != nil {
+		return &User{}, r.Error
 	}
-	if gorm.IsRecordNotFoundError(err) {
-		return &User{}, errors.New("User Not Found")
-	}
-	return u, err
+	return &fetchedUser, nil
 }
 
-*/
+func (store *SqlStore) UpdateUserPassword(updateUserRequest *UpdateUserRequest) (message string, err error) {
+	if err := updateUserRequest.Validate(); err != nil {
+		return err.Error(), err
+	}
+
+	// hash old password and check it with original password stored in database
+	isPasswordsMatch, err := store.isPasswordMatchWithOriginalPassword(updateUserRequest.PreviousPassword, updateUserRequest.Email)
+	if err != nil {
+		return "failed to update password", err
+	}
+
+	if !isPasswordsMatch {
+		return "email or password is incorrect", errors.New("email or password is incorrect")
+	}
+
+	hashedNewPassword, err := utils.HashPassword(updateUserRequest.NewPassword)
+	if err != nil {
+		return "failed to update password", err
+	}
+
+	dbResult := store.db.Model(&User{}).Where("email = ?", updateUserRequest.Email).Take(&User{}).UpdateColumns(
+		map[string]interface{}{
+			"password":   hashedNewPassword,
+			"updated_at": time.Now(),
+		})
+
+	if dbResult.Error != nil {
+		return "failed to update password", dbResult.Error
+	}
+
+	return "user password successfully updated", nil
+}
+
+func (store *SqlStore) isPasswordMatchWithOriginalPassword(oldPassword, email string) (bool, error) {
+	user, err := store.GetUserByEmail(email)
+	if err != nil {
+		return false, err
+	}
+
+	if user.Email != email {
+		// the email stored in database and the email that user entered, doesn't match
+		return false, errors.New("email or password is incorrect")
+	}
+
+	err = utils.CheckPassword(user.Password, oldPassword)
+	if err != nil {
+		return false, err
+	}
+
+	// the old password matches with password stored in database
+	return true, nil
+}

@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"github.com/MasoudHeydari/golang-keep-note/models"
 	"github.com/MasoudHeydari/golang-keep-note/respond"
-	"github.com/MasoudHeydari/golang-keep-note/utils"
-	"golang.org/x/crypto/bcrypt"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -36,45 +34,37 @@ func (server *Server) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user.Prepare()
 	err = user.Validate("login")
 	if err != nil {
 		respond.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
-	token, err := server.SignIn(user.Email, user.Password)
+	err = server.sqlStore.LoginUser(&user)
 	if err != nil {
 		respond.Error(w, http.StatusUnprocessableEntity, err)
 		return
 	}
-	loginResponse := newLoginResponse(token, &user)
+
+	token, err := server.tokenMaker.CreateTokenPayload(user.Email, time.Hour)
+	if err != nil {
+		respond.Error(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	loginResponse := buildNewLoginResponse(token, &user)
 	respond.JSON(w, http.StatusOK, loginResponse)
 
 }
 
-func (server *Server) SignIn(email string, password string) (string, error) {
-	user, err := server.sqlStore.GetUserByEmail(email)
-	if err != nil {
-		return "", err
-	}
-
-	err = utils.CheckPassword(user.Password, password)
-	if err != nil && err == bcrypt.ErrMismatchedHashAndPassword {
-		return "", nil
-	}
-
-	return server.tokenMaker.CreateToken(user.ID)
-}
-
-func newLoginResponse(accessToken string, user *models.User) loginUserResponse {
+func buildNewLoginResponse(accessToken string, user *models.User) loginUserResponse {
 	return loginUserResponse{
 		AccessToken: accessToken,
-		User:        newUserResponse(user),
+		User:        buildNewUserResponse(user),
 	}
 }
 
-func newUserResponse(user *models.User) userResponse {
+func buildNewUserResponse(user *models.User) userResponse {
 	return userResponse{
 		FirstName: user.FirstName,
 		LastName:  user.LastName,

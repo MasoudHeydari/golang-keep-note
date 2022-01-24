@@ -20,12 +20,12 @@ func initializeUserRouter(server *Server) {
 	server.Router.HandleFunc("/users", server.CreateNewUser).Methods("POST")
 	server.Router.HandleFunc("/users", server.GetAllUsers).Methods("GET")
 	server.Router.HandleFunc("/users/{id}", server.GetUserById).Methods("GET")
-	server.Router.HandleFunc("/users/{id}", server.UpdateUser).Methods("PUT")
-	server.Router.HandleFunc("/users/{id}", server.DeleteUser).Methods("DELETE")
+	server.Router.HandleFunc("/users", server.AuthMiddleware(server.UpdateUserPassword)).Methods("PUT")
+	server.Router.HandleFunc("/users/{id}", server.AuthMiddleware(server.DeleteUser)).Methods("DELETE")
 }
 
 func initializeLoginRouter(server *Server) {
-
+	server.Router.HandleFunc("/login", server.Login).Methods("POST")
 }
 
 func initializeNoteRouter(server *Server) {
