@@ -13,4 +13,6 @@ type SqlQuerier interface {
 	LoginUser(user *User) error
 
 	CreateNewNote(newNote *NewNoteRequest) (*Note, error)
+	GetAllNotes(email string) (*[]Note, error)
+	DeleteANote(noteId int, email string) error
 }
