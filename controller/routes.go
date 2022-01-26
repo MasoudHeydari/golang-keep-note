@@ -29,5 +29,6 @@ func initializeLoginRouter(server *Server) {
 }
 
 func initializeNoteRouter(server *Server) {
-
+	server.Router.HandleFunc("/posts", server.AuthMiddleware(server.CreateNewNote)).Methods("POST")
+	server.Router.HandleFunc("/posts", server.AuthMiddleware(server.GetAllNotes)).Methods("GET")
 }

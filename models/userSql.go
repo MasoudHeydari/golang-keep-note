@@ -28,7 +28,7 @@ func (store *SqlStore) CreateNewUser(newUser *User) (*User, error) {
 	if err != nil {
 		return &User{}, err
 	}
-
+	fmt.Println("try to create new user")
 	err = store.db.Create(newUser).Error
 	if err != nil {
 		return &User{}, err
@@ -40,8 +40,10 @@ func (store *SqlStore) CreateNewUser(newUser *User) (*User, error) {
 func (store *SqlStore) IsEmailAlreadyExist(user *User) (bool, error) {
 	isEmailExist := false
 	r := store.db.Model(User{}).Where("email = ?", user.Email).Take(&User{})
-	if r.Error != nil {
-		return isEmailExist, r.Error
+
+	if r.Error != nil && !gorm.IsRecordNotFoundError(r.Error) {
+		// reach here when we have error and user want to register for first time
+		return false, r.Error
 	}
 
 	isEmailExist = r.RowsAffected > 0
@@ -81,6 +83,15 @@ func (store *SqlStore) GetUserByEmail(email string) (*User, error) {
 		return &User{}, r.Error
 	}
 	return &fetchedUser, nil
+}
+
+func (store *SqlStore) GetUserIdByEmail(email string) (uint32, error) {
+	fetchedUser := User{}
+	r := store.db.Model(User{}).Where("email = ?", email).Take(&fetchedUser)
+	if r.Error != nil {
+		return fetchedUser.ID, r.Error
+	}
+	return fetchedUser.ID, nil
 }
 
 func (store *SqlStore) UpdateUserPassword(updateUserRequest *UpdateUserRequest) (message string, err error) {
