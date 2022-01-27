@@ -1,6 +1,9 @@
 package models
 
-import "github.com/jinzhu/gorm"
+import (
+	"errors"
+	"github.com/jinzhu/gorm"
+)
 
 func (store SqlStore) CreateNewNote(newNoteRequest *NewNoteRequest) (*Note, error) {
 	userId, err := store.GetUserIdByEmail(newNoteRequest.Email)
@@ -33,5 +36,38 @@ func (store *SqlStore) GetAllNotes(email string) (*[]Note, error) {
 }
 
 func (store *SqlStore) DeleteANote(noteId int, email string) error {
+	userId, err := store.GetUserIdByEmail(email)
+	if err != nil {
+		return errors.New("internal server error, failed to delete note")
+	}
+
+	// get note by id
+	note, err := store.GetANoteByNoteId(noteId)
+	if err != nil {
+		return errors.New("internal server error, failed to delete note")
+	}
+
+	// check if authenticated user is owner of note
+	if note.AuthorID != userId {
+		return errors.New("cannot delete this note! your are not the owner of this note")
+	}
+
+	//fmt.Println("note: ", note.AuthorID, userId)
+
+	result := store.db.Model(&Note{}).Where("id = ? and author_id = ?", noteId, userId).Take(&Note{}).Delete(&Note{})
+	if result.Error != nil {
+		return errors.New("internal server error, failed to delete note")
+	}
+
+	// note deleted successfully
 	return nil
+}
+
+func (store *SqlStore) GetANoteByNoteId(noteId int) (*Note, error) {
+	fetchedNote := Note{}
+	result := store.db.Model(&Note{}).Where("id = ?", noteId).Take(&fetchedNote)
+	if result.Error != nil {
+		return &Note{}, result.Error
+	}
+	return &fetchedNote, nil
 }

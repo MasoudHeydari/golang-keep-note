@@ -78,7 +78,7 @@ func (store *SqlStore) GetUserById(userId uint32) (*User, error) {
 func (store *SqlStore) GetUserByEmail(email string) (*User, error) {
 	fetchedUser := User{}
 	r := store.db.Model(User{}).Where("email = ?", email).Take(&fetchedUser)
-	fmt.Println("row affected: ", r.RowsAffected)
+	//fmt.Println("row affected: ", r.RowsAffected)
 	if r.Error != nil {
 		return &User{}, r.Error
 	}

@@ -69,5 +69,9 @@ func (server *Server) DeleteANote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respond.JSON(w, http.StatusOK, "note deleted successfully")
+	deleteNoteResponse := map[string]string{
+		"message": "note deleted successfully",
+	}
+
+	respond.JSON(w, http.StatusOK, deleteNoteResponse)
 }
