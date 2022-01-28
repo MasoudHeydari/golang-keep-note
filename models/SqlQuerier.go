@@ -14,6 +14,7 @@ type SqlQuerier interface {
 
 	CreateNewNote(newNote *NewNoteRequest) (*Note, error)
 	GetAllNotes(email string) (*[]Note, error)
+	UpdateNote(note *UpdateNoteRequest) (*UpdateNoteResponse, error)
 	DeleteANote(noteId int, email string) error
 	GetANoteByNoteId(noteId int) (*Note, error)
 }

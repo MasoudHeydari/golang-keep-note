@@ -15,6 +15,21 @@ type Note struct {
 	UpdatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at"`
 }
 
+type UpdateNoteRequest struct {
+	ID      uint32 `json:"id"`
+	Title   string `json:"title"`
+	Content string `json:"content"`
+	Email   string
+}
+
+type UpdateNoteResponse struct {
+	ID        uint32    `json:"id"`
+	Title     string    `json:"title"`
+	Content   string    `json:"content"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
 type NewNoteRequest struct {
 	Email   string
 	NewNote *Note
@@ -43,5 +58,29 @@ func (note *Note) CreateNewNoteRequest(email string) *NewNoteRequest {
 	return &NewNoteRequest{
 		Email:   email,
 		NewNote: note,
+	}
+}
+
+func (note *UpdateNoteRequest) Prepare(noteId int64, email string) error {
+	note.ID = uint32(noteId)
+	note.Email = email
+
+	if note.Title == "" {
+		return errors.New("required title")
+	}
+	if note.Content == "" {
+		return errors.New("required content")
+	}
+	return nil
+
+}
+
+func (note *Note) CreateUpdateNoteResponse() *UpdateNoteResponse {
+	return &UpdateNoteResponse{
+		ID:        note.ID,
+		Title:     note.Title,
+		Content:   note.Content,
+		CreatedAt: note.CreatedAt,
+		UpdatedAt: note.UpdatedAt,
 	}
 }

@@ -3,6 +3,8 @@ package models
 import (
 	"errors"
 	"github.com/jinzhu/gorm"
+	"log"
+	"time"
 )
 
 func (store SqlStore) CreateNewNote(newNoteRequest *NewNoteRequest) (*Note, error) {
@@ -33,6 +35,40 @@ func (store *SqlStore) GetAllNotes(email string) (*[]Note, error) {
 		return &allNotes, err
 	}
 	return &allNotes, nil
+}
+
+func (store *SqlStore) UpdateNote(note *UpdateNoteRequest) (*UpdateNoteResponse, error) {
+	userId, err := store.GetUserIdByEmail(note.Email)
+	if err != nil {
+		return &UpdateNoteResponse{}, err
+	}
+
+	noteToUpdate, err := store.GetANoteByNoteId(int(note.ID))
+	if gorm.IsRecordNotFoundError(err) {
+		return &UpdateNoteResponse{}, errors.New("failed to update! there is no such note")
+
+	} else if err != nil {
+		return &UpdateNoteResponse{}, err
+	}
+
+	// check if authenticated user is owner of this note or not
+	if userId != noteToUpdate.AuthorID {
+		return &UpdateNoteResponse{}, errors.New("cannot update this note! your are not the owner of this note")
+	}
+
+	//update note
+	noteToUpdate.Title = note.Title
+	noteToUpdate.Content = note.Content
+	noteToUpdate.UpdatedAt = time.Now()
+
+	result := store.db.Model(&Note{}).Where("id = ?", noteToUpdate.ID).Update(noteToUpdate)
+	if result.Error != nil {
+		return &UpdateNoteResponse{}, errors.New("failed to update note, internal error")
+	}
+
+	log.Println("note updated successfully")
+	return noteToUpdate.CreateUpdateNoteResponse(), nil
+
 }
 
 func (store *SqlStore) DeleteANote(noteId int, email string) error {
