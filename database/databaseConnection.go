@@ -4,10 +4,22 @@ import (
 	"fmt"
 	"github.com/MasoudHeydari/golang-keep-note/config"
 	"github.com/MasoudHeydari/golang-keep-note/models"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/mysql" //mysql database driver
 	"log"
 )
+
+func createDatabaseIfNoteExist(dbName string) {
+	db, err := gorm.Open("mysql", "root:MySQL*Pass4883@tcp(127.0.0.1:3306)/")
+	if err != nil {
+		fmt.Println("here1")
+		panic(err)
+	}
+	defer db.Close()
+
+	db.Exec("CREATE DATABASE IF NOT EXISTS " + dbName)
+	db.Exec("USE " + dbName)
+}
 
 func ConnectToDB() (*gorm.DB, error) {
 	sqlCredentials, err := getMySqlCredentials()
@@ -17,6 +29,7 @@ func ConnectToDB() (*gorm.DB, error) {
 	}
 
 	fmt.Println(sqlCredentials)
+	createDatabaseIfNoteExist(config.GetDbName())
 
 	// connect to db
 	dbConnection, err := gorm.Open("mysql", sqlCredentials)

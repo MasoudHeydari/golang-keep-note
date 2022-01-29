@@ -16,6 +16,11 @@ func GetAppConfig() (appConfig map[string]string, err error) {
 	return
 }
 
+func GetDbName() string {
+	appConfig, _ := godotenv.Read()
+	return appConfig["MYSQL_DB_NAME"]
+}
+
 func GetTokenSecretKey() string {
 	// TODO cannot read values from .env file
 	//s := os.Getenv("MYSQL_PORT")
