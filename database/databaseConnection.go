@@ -1,6 +1,7 @@
 package database
 
 import (
+	"errors"
 	"fmt"
 	"github.com/MasoudHeydari/golang-keep-note/config"
 	"github.com/MasoudHeydari/golang-keep-note/models"
@@ -9,10 +10,23 @@ import (
 	"log"
 )
 
+// database credentials enumeration
+const (
+	createDatabase = iota
+	connectToDatabase
+)
+
 func createDatabaseIfNoteExist(dbName string) {
-	db, err := gorm.Open("mysql", "root:MySQL*Pass4883@tcp(127.0.0.1:3306)/")
+	// parsing mysql credentials
+	sqlCredentials, err := getMySqlCredentials(createDatabase)
 	if err != nil {
-		fmt.Println("here1")
+		log.Fatal("err while parsing mysql credentials")
+	}
+
+	fmt.Println(sqlCredentials)
+	db, err := gorm.Open("mysql", sqlCredentials)
+
+	if err != nil {
 		panic(err)
 	}
 	defer db.Close()
@@ -22,9 +36,9 @@ func createDatabaseIfNoteExist(dbName string) {
 }
 
 func ConnectToDB() (*gorm.DB, error) {
-	sqlCredentials, err := getMySqlCredentials()
+	sqlCredentials, err := getMySqlCredentials(connectToDatabase)
 	if err != nil {
-		log.Fatal("err while connecting to mysql database")
+		log.Fatal("err while parsing mysql credentials")
 		return nil, err
 	}
 
@@ -47,23 +61,37 @@ func ConnectToDB() (*gorm.DB, error) {
 	return dbConnection, err
 }
 
-func getMySqlCredentials() (mySqlCredentials string, err error) {
-
+func getMySqlCredentials(mode int) (mySqlCredentials string, err error) {
 	appConfig, err := config.GetAppConfig()
 	if err != nil {
 		log.Fatal("error while getting app config, error: ", err)
 		return "", err
 	}
 
-	// Example: user:password@tcp(host:port)/db_name
 	mySqlCredentials = fmt.Sprintf(
-		"%s:%s@%s(%s:%s)/%s?charset=utf8&parseTime=True&loc=Local",
+		"%s:%s@%s(%s:%s)/",
 		appConfig["MYSQL_USER"],
 		appConfig["MYSQL_PASSWORD"],
 		appConfig["MYSQL_PROTOCOL"],
 		appConfig["MYSQL_HOST"],
 		appConfig["MYSQL_PORT"],
-		appConfig["MYSQL_DB_NAME"],
 	)
-	return
+
+	if mode == connectToDatabase {
+		// Example: user:password@tcp(host:port)/db_name?charset=utf8&parseTime=True&loc=Local
+		mySqlCredentials = fmt.Sprintf(
+			"%s%s?charset=utf8&parseTime=True&loc=Local",
+			mySqlCredentials,
+			appConfig["MYSQL_DB_NAME"],
+		)
+		return
+	} else if mode == createDatabase {
+		// Example: user:password@tcp(host:port)/
+		// do noting, just return base 'mySqlCredentials'
+		return
+	}
+
+	// invalid mode
+	return "", errors.New("provided mode is invalid")
+
 }

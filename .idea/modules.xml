@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/golang-keep-note.iml" filepath="$PROJECT_DIR$/.idea/golang-keep-note.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../simplebank/.idea/simplebank.iml" filepath="$PROJECT_DIR$/../simplebank/.idea/simplebank.iml" />
     </modules>
   </component>
 </project>
